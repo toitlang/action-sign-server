@@ -136,7 +136,7 @@ jobs:
           overwrite: true
 
       - name: Update the README
-        if: env.UPDATE_README == 'true'
+        if: env.UPDATE_README == 'true' && runner.os == 'Linux'
         run: |
           ./update-readme.sh ${{ github.sha }} ${{ env.ACTION_VERSION }}
           git config --local user.email "leon@toit.io"
