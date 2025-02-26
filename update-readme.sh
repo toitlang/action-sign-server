@@ -9,7 +9,7 @@ hash=$1
 version=$2
 
 HASH_MARKER='${HASH}'
-VERSION_MARKER='$VERSION'
+VERSION_MARKER='${VERSION}'
 
 # Replace the old hash and version with the new hash and version in
 # the README.md file.

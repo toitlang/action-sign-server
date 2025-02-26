@@ -16,7 +16,7 @@ Intended to be used with a Certum code signing certificate.
 
 ```yaml
       - name: Run the action for a single file
-        uses: toitlang/action-code-sign@{HASH}  # ${VERSION}
+        uses: toitlang/action-code-sign@${HASH}  # ${VERSION}
         with:
           uri: ${{ vars.SIGNING_URI }}
           password: ${{ secrets.SIGNING_PASSWORD }}
@@ -43,7 +43,7 @@ will be signed. Additional paths can be added to the list.
 
 ```yaml
       - name: Run the action for all exe files in a folder
-        uses: toitlang/action-code-sign@{HASH}  # ${VERSION}
+        uses: toitlang/action-code-sign@${HASH}  # ${VERSION}
         with:
           uri: ${{ vars.SIGNING_URI }}
           password: ${{ secrets.SIGNING_PASSWORD }}
