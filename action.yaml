@@ -50,6 +50,7 @@ runs:
     - name: Install Toit packages
       shell: bash
       run: |
+        cd ${{ github.action_path }}
         toit pkg install
 
     - name: Sign (Posix)
