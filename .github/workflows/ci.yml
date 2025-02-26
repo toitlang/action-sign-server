@@ -98,7 +98,7 @@ jobs:
           path: build/server.exe
 
       - name: Prepare release
-        if: env.DO_RELEASE == 'true'
+        if: env.DO_RELEASE == 'true' && runner.os != 'Windows'
         shell: bash
         run: |
           mkdir -p release
@@ -107,13 +107,20 @@ jobs:
             tar -czf release/server-macos.tar.gz -C build server
           elif [ ${{ runner.os }} == 'Linux' ]; then
             tar -czf release/server-linux.tar.gz -C build server
-          elif [ ${{ runner.os }} == 'Windows' ]; then
-            cd build
-            zip ../release/server-windows.zip server.exe
           else
             echo "Unknown OS: ${{ runner.os }}"
             exit 1
           fi
+
+      - name: Prepare release (Windows)
+        if: env.DO_RELEASE == 'true' && runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          mkdir -p release
+          # Use powershell to zip the Windows executables.
+          Push-Location build
+          Compress-Archive -Path server.exe -DestinationPath ../release/server-windows.zip
+          Pop-Location
 
       - name: Upload release artifacts
         if: env.DO_RELEASE == 'true'
