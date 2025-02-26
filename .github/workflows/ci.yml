@@ -111,11 +111,14 @@ jobs:
           # tar.gz mac and Linux executables. Zip Windows executables.
           if [ ${{ runner.os }} == 'macOS' ]; then
             tar -czf release/server-macos.tar.gz -C build server
-          elif [ ${{ runner.os }} == 'ubuntu-latest' ]; then
+          elif [ ${{ runner.os }} == 'Linux' ]; then
             tar -czf release/server-linux.tar.gz -C build server
-          elif [ ${{ runner.os }} == 'windows-latest' ]; then
+          elif [ ${{ runner.os }} == 'Windows' ]; then
             cd build
             zip ../release/server-windows.zip server.exe
+          else
+            echo "Unknown OS: ${{ runner.os }}"
+            exit 1
           fi
 
       - name: Upload release artifacts

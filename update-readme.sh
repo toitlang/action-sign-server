@@ -1,4 +1,4 @@
-#!bash
+#!/bin/bash
 
 # A small script that updates the README for releases.
 # Arguments to the script
