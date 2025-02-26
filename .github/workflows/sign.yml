@@ -4,9 +4,144 @@ on:
   workflow_dispatch
 
 jobs:
-  test:
+  build-windows-executables:
     runs-on: windows-latest
+
+    steps:
+      - name: Build executables
+        shell: bash
+        run: |
+          CURRENT_SECS=$(date +%s)
+
+          mkdir exes
+
+          # Repeat 5 times.
+          for i in {1..5}; do
+            ((CURRENT_SECS++))
+            echo "int main() { return $CURRENT_SECS; }" > main.c
+            gcc main.c -o exes/main$i.exe
+          done
+
+      - name: Upload executables
+        uses: actions/upload-artifact@v4
+        with:
+          name: executables
+          path: exes
+
+  test:
+    needs: build-windows-executables
+
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Download the unsigned executables
+        uses: actions/download-artifact@v4
+        with:
+          name: executables
+          path: executables
+
+      - name: Prepare single signed executable
+        shell: bash
+        run: |
+          mkdir single
+          cp executables/main1.exe single/main.exe
+
+      - name: Sign the executable
+        uses: ./
+        with:
+          uri: ${{ vars.CERTUM_URI }}
+          password: ${{ secrets.CERTUM_PWD }}
+          # Test with absolute path.
+          path: ${{ github.workspace }}/single/main.exe
+
+      - name: Upload signed executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-executable-${{ matrix.os }}
+          path: single
+
+      - name: Check signature
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          if ((Get-AuthenticodeSignature -FilePath 'single/main.exe').Status -ne 'Valid') {
+            Write-Error "The signature is not valid."
+            exit 1
+          }
+
+      - name: Prepare multiple signed executables and nested
+        shell: bash
+        run: |
+          mkdir -p multi/sub1
+          cp executables/main2.exe multi/sub1/main.exe
+
+          mkdir -p multi/sub2
+          cp executables/main3.exe multi/sub2/main.exe
+
+          mkdir -p multi/sub3
+          cp executables/main4.exe "multi/sub3/main with space.exe"
+
+          cp -r multi nested
+
+      - name: Sign several executables
+        uses: ./
+        with:
+          uri: ${{ vars.CERTUM_URI }}
+          password: ${{ secrets.CERTUM_PWD }}
+          path: |
+            multi/sub1/main.exe
+            ${{ github.workspace }}/multi/sub2/main.exe
+            multi/sub3/main with space.exe
+
+      - name: Upload signed executables
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-executable-multi-${{ matrix.os }}
+          path: multi
+
+      - name: Check signatures
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          $files = @('multi/sub1/main.exe', 'multi/sub2/main.exe', 'multi/sub3/main with space.exe')
+
+          foreach ($file in $files) {
+            if ((Get-AuthenticodeSignature -FilePath $file).Status -ne 'Valid') {
+              Write-Error "The signature of $file is not valid."
+              exit 1
+            }
+          }
+
+      - name: Sign files in a folder
+        uses: ./
+        with:
+          uri: ${{ vars.CERTUM_URI }}
+          password: ${{ secrets.CERTUM_PWD }}
+          path: |
+            nested
+
+      - name: Upload signed folder executables
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-executable-folder-${{ matrix.os }}
+          path: nested
+
+      - name: Check signatures
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          $files = @('nested/sub1/main.exe', 'nested/sub2/main.exe', 'nested/sub3/main with space.exe')
+
+          foreach ($file in $files) {
+            if ((Get-AuthenticodeSignature -FilePath $file).Status -ne 'Valid') {
+              Write-Error "The signature of $file is not valid."
+              exit 1
+            }
+          }

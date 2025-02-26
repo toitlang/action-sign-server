@@ -1,0 +1,139 @@
+name: "Sign file"
+description: "Sign a file using a remote signing server."
+branding:
+  icon: lock
+  color: green
+
+inputs:
+  uri:
+    description: "The URI of the signing server."
+    required: true
+  password:
+    description: "The password to the server."
+    required: true
+  path:
+    description: "The path to files or folders to sign. One on each line."
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Inputs
+      shell: bash
+      run: |
+        echo "uri: ${{ inputs.uri }}"
+        echo "password: ${{ inputs.password }}"
+        echo "path: ${{ inputs.path }}"
+
+    - name: Check that all required inputs are given
+      shell: bash
+      run: |
+        set -e
+        if [[ -z "${{ inputs.uri }}" ]]; then
+          echo "Input uri is missing."
+          exit 1
+        fi
+        if [[ -z "${{ inputs.password }}" ]]; then
+          echo "Input password is missing."
+          exit 1
+        fi
+        if [[ -z "${{ inputs.path }}" ]]; then
+          echo "Input path is missing."
+          exit 1
+        fi
+
+    - name: Install Toit
+      uses: toitlang/action-setup@v1
+      with:
+        toit-version: 'v2.0.0-alpha.174'
+
+    - name: Install Toit packages
+      shell: bash
+      run: |
+        toit pkg install
+
+    - name: Sign (Posix)
+      if: runner.os == 'Linux' || runner.os == 'macOS'
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+      shell: bash
+      run: |
+        echo "Running"
+        IFS=$'\n' read -r -a paths <<< "$INPUT_PATH"
+
+        function sign_file() {
+          local path="$1"
+          if [ -n "$path" ]; then # Check if path is not empty.
+            local output=$(mktemp)
+            toit run -- ${{ github.workspace }}/client/main.toit \
+                --uri="${{ inputs.uri }}" \
+                --password="${{ inputs.password }}" \
+                --output="$output" \
+                "$path"
+            mv "$output" "$path"
+          fi
+        }
+
+        for p in "${paths[@]}"; do
+          echo "Processing: $p"
+          if [ -d "$p" ]; then
+            find "$p" -name "*.exe" -print0 | while IFS= read -r -d $'\0' exe_path; do
+              sign_file "$exe_path"
+            done
+          else
+            sign_file "$p"
+          fi
+        done
+
+    - name: Sign (Windows)
+      if: runner.os == 'Windows'
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+      shell: powershell
+      run: |
+        # Make the script fail on any error.
+        $ErrorActionPreference = "Stop"
+
+        $paths = $env:INPUT_PATH -split "`n"
+
+        function Sign-Command {
+          param(
+            [string]$Path
+          )
+          Write-Host "Signing: $Path"
+          if (-not [string]::IsNullOrEmpty($Path)) {
+            $outputFile = New-TemporaryFile
+            Write-Host "Temporary file created: $($outputFile.FullName)"
+
+            $toitCommand = "toit"
+            $toitArgs = @(
+              "run", "--",
+              "$env:GITHUB_WORKSPACE/client/main.toit",
+              "--uri", "${{ inputs.uri }}",
+              "--password", "${{ inputs.password }}",
+              "--output",  "$outputFile.FullName",
+              "$Path"
+            )
+
+            & $toitCommand @toitArgs
+
+            Move-Item -Path "$outputFile.FullName" -Destination "$Path" -Force
+
+            Write-Host "Command executed and output moved for: $Path"
+          }
+        }
+
+        foreach ($p in $paths) {
+          # Skip if path is empty.
+          if ([string]::IsNullOrEmpty($p)) {
+            continue
+          }
+          Write-Host "Processing: $p"
+          if (Test-Path -PathType Container -Path $p) {
+            Get-ChildItem -Path $p -Filter "*.exe" -Recurse | ForEach-Object {
+              Sign-Command -Path $_.FullName
+            }
+          } else {
+            Sign-Command -Path $p
+          }
+        }

@@ -1,0 +1,145 @@
+name: CI
+
+on:
+  release:
+    types: [published]
+  push:
+    branches:
+      - "*"
+      - "*/*"
+  workflow_dispatch:
+    inputs:
+      # Use 'inputs.<name>' when pasting into a bash `if`, like so:
+      #    if [[ "${{ inputs.strip }}" == 'true' ]]; then ...
+      #
+      # When using to guard a step, use 'github.event.inputs.<name>', like so:
+      #    if: ${{ github.event.inputs.<name> == 'true' }}
+      # or
+      #    if: ${{ github.event.inputs.<name> != 'false' }}
+      # In the first case, the step will not run if there isn't any workflow dispatch.
+      # In the second case, the step will run if there isn't any workflow dispatch.
+      # As such, the recommendation is to use the `== true` if the default is
+      # false, and the `!= false` if the default is true.
+      sign-macos:
+        description: "Sign macOS executables"
+        required: false
+        type: boolean
+        default: false
+      update-readme:
+        description: "Update the README.md file"
+        required: false
+        type: boolean
+        default: false
+      do-release:
+        description: "Build release artifacts and upload with this version"
+        required: false
+        type: string
+        default:
+
+env:
+  TOIT_VERSION: v2.0.0-alpha.174
+  ACTION_VERSION: ${{ github.event.inputs.do-release || github.event.release.tag_name || '' }}
+  DO_RELEASE: ${{ github.event_name == 'release' || startsWith(github.event.inputs.do-release, 'v') }}
+  SIGN_MACOS: ${{ github.event_name == 'release' || github.event.inputs.sign-macos == 'true' }}
+  UPDATE_README: ${{ github.event_name == 'release' || github.event.inputs.update-readme == 'true' }}
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Toit
+        uses: toitlang/action-setup@v1
+        with:
+          toit-version: '${{ env.TOIT_VERSION }}'
+
+      - name: Build executables
+        run: |
+          make
+
+      - name: Upload executables
+        uses: actions/upload-artifact@v4
+        with:
+          name: executables-${{ runner.os }}
+          path: build
+
+      - name: test
+        run: |
+          make test
+
+      # Check that the README.md wasn't updated.
+      # We must only change the README.md.in
+      - name: README check
+        if: runner.os == 'Linux'
+        run: |
+          if [[ -n $(git diff --name-only main..HEAD README.md) ]]; then
+            echo "README.md was updated. Please update README.md.in instead."
+            exit 1
+          fi
+
+      - name: Sign the executable (macOS)
+        if: env.SIGN_MACOS == 'true'
+        uses: toitlang/action-macos-sign-notarize@567fcd7c0b89e1b4d0fbc5132cce6e56224db1b7 # v1.2.0
+        with:
+          certificate: ${{ secrets.MACOS_CERTIFICATE }}
+          certificate-password: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+          username: ${{ secrets.AC_USERNAME }}
+          password: ${{ secrets.AC_PASSWORD }}
+          apple-team-id: ${{ vars.MACOS_TEAM_ID }}
+          app-path: build/server
+
+      - name: Sign the executable (Windows)
+        if: runner.os == 'Windows'
+        uses: ./
+        with:
+          uri: ${{ vars.CERTUM_URI }}
+          password: ${{ secrets.CERTUM_PWD }}
+          path: build/server.exe
+
+      - name: Prepare release
+        if: env.DO_RELEASE == 'true'
+        shell: bash
+        run: |
+          mkdir -p release
+          # tar.gz mac and Linux executables. Zip Windows executables.
+          if [ ${{ runner.os }} == 'macOS' ]; then
+            tar -czf release/server-macos.tar.gz -C build server
+          elif [ ${{ runner.os }} == 'ubuntu-latest' ]; then
+            tar -czf release/server-linux.tar.gz -C build server
+          elif [ ${{ runner.os }} == 'windows-latest' ]; then
+            cd build
+            zip ../release/server-windows.zip server.exe
+          fi
+
+      - name: Upload release artifacts
+        if: env.DO_RELEASE == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ runner.os }}
+          path: release
+
+      - name: Upload release artifacts as assets
+        if: github.event_name == 'release'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file_glob: true
+          file: release/server*
+          tag: ${{ github.event.release.tag_name }}
+          overwrite: true
+
+      - name: Update the README
+        if: env.UPDATE_README == 'true'
+        run: |
+          ./update-readme.sh ${{ github.sha }} ${{ env.ACTION_VERSION }}
+          git config --local user.email "leon@toit.io"
+          git config --local user.name "Toit CI"
+          git commit -am "Update README"
+          git push
