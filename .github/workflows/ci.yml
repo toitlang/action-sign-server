@@ -42,6 +42,7 @@ env:
   DO_RELEASE: ${{ github.event_name == 'release' || startsWith(github.event.inputs.do-release, 'v') }}
   SIGN_MACOS: ${{ github.event_name == 'release' || github.event.inputs.sign-macos == 'true' }}
   UPDATE_README: ${{ github.event_name == 'release' || github.event.inputs.update-readme == 'true' }}
+  UPDATE_README_MESSAGE: "Update README"
 
 jobs:
   test:
@@ -131,5 +132,5 @@ jobs:
           ./update-readme.sh ${{ github.sha }} ${{ env.ACTION_VERSION }}
           git config --local user.email "leon@toit.io"
           git config --local user.name "Toit CI"
-          git commit -am "Update README"
+          git commit -am "${{ env.UPDATE_README_MESSAGE }}"
           git push

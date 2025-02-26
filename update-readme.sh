@@ -8,12 +8,10 @@
 hash=$1
 version=$2
 
-OLD_HASH="OLD-HASH"
-OLD_VERSION="OLD-VERSION"
+HASH_MARKER='${HASH}'
+VERSION_MARKER='$VERSION'
 
 # Replace the old hash and version with the new hash and version in
-# the README.md file and this script.
-sed -i "s/$OLD_HASH/$hash/g" README.md
-sed -i "s/$OLD_VERSION/$version/g" README.md
-sed -i "s/$OLD_HASH/$hash/g" update-readme.sh
-sed -i "s/$OLD_VERSION/$version/g" update-readme.sh
+# the README.md file.
+sed "s/$HASH_MARKER/$hash/g" README.md.in > README.md
+sed -i "s/$VERSION_MARKER/$version/g" README.md
