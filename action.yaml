@@ -65,7 +65,7 @@ runs:
           local path="$1"
           if [ -n "$path" ]; then # Check if path is not empty.
             local output=$(mktemp)
-            toit run -- ${{ github.workspace }}/client/main.toit \
+            toit run -- ${{ github.action_path }}/client/main.toit \
                 --uri="${{ inputs.uri }}" \
                 --password="${{ inputs.password }}" \
                 --output="$output" \
@@ -108,7 +108,7 @@ runs:
             $toitCommand = "toit"
             $toitArgs = @(
               "run", "--",
-              "$env:GITHUB_WORKSPACE/client/main.toit",
+              "${{ github.action_path }}/client/main.toit",
               "--uri", "${{ inputs.uri }}",
               "--password", "${{ inputs.password }}",
               "--output",  "$outputFile.FullName",
