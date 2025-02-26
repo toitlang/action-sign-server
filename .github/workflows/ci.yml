@@ -75,6 +75,16 @@ jobs:
         run: |
           make test
 
+      # Check that the README.md wasn't updated.
+      # We must only change the README.md.in
+      - name: README check
+        if: runner.os == 'Linux'
+        run: |
+          if [[ -n $(git diff --name-only main..HEAD README.md) ]]; then
+            echo "README.md was updated. Please update README.md.in instead."
+            exit 1
+          fi
+
       - name: Sign the executable (macOS)
         if: env.SIGN_MACOS == 'true'
         uses: toitlang/action-macos-sign-notarize@567fcd7c0b89e1b4d0fbc5132cce6e56224db1b7 # v1.2.0
