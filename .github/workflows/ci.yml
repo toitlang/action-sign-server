@@ -25,11 +25,6 @@ on:
         required: false
         type: boolean
         default: false
-      update-readme:
-        description: "Update the README.md file"
-        required: false
-        type: boolean
-        default: false
       do-release:
         description: "Build release artifacts and upload with this version"
         required: false
@@ -41,7 +36,6 @@ env:
   ACTION_VERSION: ${{ github.event.inputs.do-release || github.event.release.tag_name || '' }}
   DO_RELEASE: ${{ github.event_name == 'release' || startsWith(github.event.inputs.do-release, 'v') }}
   SIGN_MACOS: ${{ github.event_name == 'release' || github.event.inputs.sign-macos == 'true' }}
-  UPDATE_README: ${{ github.event_name == 'release' || github.event.inputs.update-readme == 'true' }}
 
 jobs:
   test:
@@ -137,12 +131,3 @@ jobs:
           file: release/server*
           tag: ${{ github.event.release.tag_name }}
           overwrite: true
-
-      - name: Update the README
-        if: env.UPDATE_README == 'true' && runner.os == 'Linux'
-        run: |
-          ./update-readme.sh ${{ github.sha }} ${{ env.ACTION_VERSION }}
-          git config --local user.email "leon@toit.io"
-          git config --local user.name "Toit CI"
-          git commit -am "Update README"
-          git push
