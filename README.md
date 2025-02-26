@@ -16,7 +16,7 @@ Intended to be used with a Certum code signing certificate.
 
 ```yaml
       - name: Run the action for a single file
-        uses: toitlang/action-sign-server@51cf79bedcdbf065d9e5f334b594f91a675a1bed  # v1.0.3
+        uses: toitlang/action-sign-server@c0ddf849f5d30d53189381ea35daec08b1457e0d  # v1.0.4
         with:
           uri: ${{ vars.SIGNING_URI }}
           password: ${{ secrets.SIGNING_PASSWORD }}
@@ -27,7 +27,7 @@ Intended to be used with a Certum code signing certificate.
 
 ```yaml
       - name: Run the action for a multiple files
-        uses: toitlang/action-sign-server@51cf79bedcdbf065d9e5f334b594f91a675a1bed  # v1.0.3
+        uses: toitlang/action-sign-server@c0ddf849f5d30d53189381ea35daec08b1457e0d  # v1.0.4
         with:
           uri: ${{ vars.SIGNING_URI }}
           password: ${{ secrets.SIGNING_PASSWORD }}
@@ -43,7 +43,7 @@ will be signed. Additional paths can be added to the list.
 
 ```yaml
       - name: Run the action for all exe files in a folder
-        uses: toitlang/action-sign-server@51cf79bedcdbf065d9e5f334b594f91a675a1bed  # v1.0.3
+        uses: toitlang/action-sign-server@c0ddf849f5d30d53189381ea35daec08b1457e0d  # v1.0.4
         with:
           uri: ${{ vars.SIGNING_URI }}
           password: ${{ secrets.SIGNING_PASSWORD }}
