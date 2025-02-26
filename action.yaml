@@ -47,7 +47,8 @@ runs:
       with:
         toit-version: 'v2.0.0-alpha.174'
 
-    - name: Install Toit packages
+    - name: Install Toit packages (Posix)
+      if: runner.os == 'Linux' || runner.os == 'macOS'
       shell: bash
       run: |
         cd ${{ github.action_path }}
@@ -59,7 +60,6 @@ runs:
         INPUT_PATH: ${{ inputs.path }}
       shell: bash
       run: |
-        echo "Running"
         IFS=$'\n' read -r -a paths <<< "$INPUT_PATH"
 
         function sign_file() {
@@ -86,6 +86,13 @@ runs:
           fi
         done
 
+    - name: Install Toit packages (Windows)
+      if: runner.os == 'Windows'
+      shell: powershell
+      run: |
+        cd ${{ github.action_path }}
+        toit pkg install
+
     - name: Sign (Windows)
       if: runner.os == 'Windows'
       env:
@@ -101,10 +108,8 @@ runs:
           param(
             [string]$Path
           )
-          Write-Host "Signing: $Path"
           if (-not [string]::IsNullOrEmpty($Path)) {
             $outputFile = New-TemporaryFile
-            Write-Host "Temporary file created: $($outputFile.FullName)"
 
             $toitCommand = "toit"
             $toitArgs = @(
@@ -119,8 +124,6 @@ runs:
             & $toitCommand @toitArgs
 
             Move-Item -Path "$outputFile.FullName" -Destination "$Path" -Force
-
-            Write-Host "Command executed and output moved for: $Path"
           }
         }
 
