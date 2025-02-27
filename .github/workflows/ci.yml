@@ -78,7 +78,7 @@ jobs:
           # Requires the checkout to be not shallow.
           BASE_COMMIT=$(git merge-base HEAD origin/main)  # Find the original split point.
           if ! git diff --quiet $BASE_COMMIT -- README.md; then
-            echo "::error::README.md was modified in this branch compared to its original base commit."
+            echo "::error::README.md on this branch differs from its original base commit."
             exit 1
           fi
 
