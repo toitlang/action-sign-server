@@ -47,11 +47,10 @@ runs:
       with:
         toit-version: 'v2.0.0-alpha.174'
 
-    - name: Install Toit packages (Posix)
-      if: runner.os == 'Linux' || runner.os == 'macOS'
+    - name: Install Toit packages
       shell: bash
+      working-directory: ${{ github.action_path }}
       run: |
-        cd ${{ github.action_path }}
         toit pkg install
 
     - name: Sign (Posix)
@@ -85,13 +84,6 @@ runs:
             sign_file "$p"
           fi
         done
-
-    - name: Install Toit packages (Windows)
-      if: runner.os == 'Windows'
-      shell: powershell
-      run: |
-        cd ${{ github.action_path }}
-        toit pkg install
 
     - name: Sign (Windows)
       if: runner.os == 'Windows'
