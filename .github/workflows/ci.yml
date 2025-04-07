@@ -84,7 +84,7 @@ jobs:
 
       - name: Sign the executable (macOS)
         if: env.SIGN_MACOS == 'true' && runner.os == 'macOS'
-        uses: toitlang/action-macos-sign-notarize@567fcd7c0b89e1b4d0fbc5132cce6e56224db1b7 # v1.2.0
+        uses: toitlang/action-macos-sign-notarize@64b6d845b70ccd71bde584769280c612d48211db # v1.2.1
         with:
           certificate: ${{ secrets.MACOS_CERTIFICATE }}
           certificate-password: ${{ secrets.MACOS_CERTIFICATE_PWD }}
