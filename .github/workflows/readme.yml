@@ -24,7 +24,7 @@ jobs:
     # We created an App that is just there to bypass the protection rules.
     # In the settings of this repository, this App is excempt from the protection rules.
     steps:
-      - uses: actions/create-github-app-token@v1
+      - uses: actions/create-github-app-token@v2
         id: app-token
         with:
           app_id: ${{ vars.BYPASS_PROTECTION_APPID }}
