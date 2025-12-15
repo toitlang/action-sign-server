@@ -25,7 +25,7 @@ jobs:
           done
 
       - name: Upload executables
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: executables
           path: exes
@@ -64,7 +64,7 @@ jobs:
           path: ${{ github.workspace }}/single/main.exe
 
       - name: Upload signed executable
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: signed-executable-${{ matrix.os }}
           path: single
@@ -103,7 +103,7 @@ jobs:
             multi/sub3/main with space.exe
 
       - name: Upload signed executables
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: signed-executable-multi-${{ matrix.os }}
           path: multi
@@ -130,7 +130,7 @@ jobs:
             nested
 
       - name: Upload signed folder executables
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: signed-executable-folder-${{ matrix.os }}
           path: nested
