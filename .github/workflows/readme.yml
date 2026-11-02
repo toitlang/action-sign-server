@@ -31,7 +31,7 @@ jobs:
           private_key: ${{ secrets.BYPASS_PROTECTION_SECRET }}
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
